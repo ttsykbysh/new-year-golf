@@ -50,7 +50,6 @@
       border-color: gold;
     }
 
-    /* ★ 画像を90%に縮小 */
     .player-btn img {
       width: 144px;
       display: block;
@@ -118,6 +117,8 @@
   let swingStart = null;
   let accelSamples = [];
   let playerType = null;
+  let swingAudio = null;
+  let audioTimer = null;
 
   const playerSelect = document.getElementById("playerSelect");
   const startBtn = document.getElementById("start");
@@ -168,6 +169,23 @@
     swingStart = null;
     accelSamples = [];
     distanceEl.textContent = "計測中…";
+
+    // 音声準備
+    if (swingAudio) {
+      swingAudio.pause();
+      swingAudio.currentTime = 0;
+    }
+
+    const audioFile = playerType === "pro"
+      ? "p_swing.mp3"
+      : "a_swing.mp3";
+
+    swingAudio = new Audio(audioFile);
+
+    // ★ 2秒の無音後に再生
+    audioTimer = setTimeout(() => {
+      swingAudio.play();
+    }, 2000);
   };
 
   document.getElementById("reset").onclick = () => {
@@ -176,6 +194,12 @@
     startBtn.disabled = true;
     distanceEl.textContent = "プレイヤーを選んで！";
     initPlayerSelect();
+
+    if (audioTimer) clearTimeout(audioTimer);
+    if (swingAudio) {
+      swingAudio.pause();
+      swingAudio.currentTime = 0;
+    }
   };
 
   window.addEventListener("devicemotion", (event) => {
@@ -199,6 +223,11 @@
 
   function finishSwing() {
     measuring = false;
+
+    if (audioTimer) clearTimeout(audioTimer);
+    if (swingAudio) {
+      swingAudio.pause();
+    }
 
     const duration = accelSamples.length * 16;
 
@@ -230,3 +259,4 @@
 
 </body>
 </html>
+

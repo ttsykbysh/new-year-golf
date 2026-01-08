@@ -69,7 +69,7 @@
       font-family: 'Kaisei Decol', serif;
       font-size: 20px;
       padding: 14px 28px;
-      margin: 12px;
+      margin: 10px;
       border-radius: 12px;
       border: none;
       cursor: pointer;
@@ -82,6 +82,11 @@
 
     #reset {
       background: #ff6347;
+      color: #fff;
+    }
+
+    #end {
+      background: #4169e1;
       color: #fff;
     }
 
@@ -108,6 +113,7 @@
 
 <button id="start" disabled>スイングする！</button>
 <button id="reset">やり直したい！</button>
+<button id="end">終わりにする！</button>
 
 <div id="distance">プレイヤーを選んで！</div>
 
@@ -118,6 +124,7 @@
   let accelSamples = [];
   let playerType = null;
   let swingAudio = null;
+  let endAudio = null;
 
   const playerSelect = document.getElementById("playerSelect");
   const startBtn = document.getElementById("start");
@@ -146,13 +153,24 @@
 
   function selectPlayer(btn) {
     playerType = btn.dataset.player;
-
     playerSelect.innerHTML = "";
     btn.classList.add("selected");
     playerSelect.appendChild(btn);
-
     startBtn.disabled = false;
     distanceEl.textContent = "スイングする！を押してスイング！！";
+  }
+
+  function fullReset() {
+    measuring = false;
+    playerType = null;
+    startBtn.disabled = true;
+    distanceEl.textContent = "プレイヤーを選んで！";
+    initPlayerSelect();
+
+    if (swingAudio) {
+      swingAudio.pause();
+      swingAudio.currentTime = 0;
+    }
   }
 
   initPlayerSelect();
@@ -171,16 +189,14 @@
   };
 
   document.getElementById("reset").onclick = () => {
-    measuring = false;
-    playerType = null;
-    startBtn.disabled = true;
-    distanceEl.textContent = "プレイヤーを選んで！";
-    initPlayerSelect();
+    fullReset();
+  };
 
-    if (swingAudio) {
-      swingAudio.pause();
-      swingAudio.currentTime = 0;
-    }
+  // ★ 終わりにする！
+  document.getElementById("end").onclick = () => {
+    fullReset();
+    endAudio = new Audio("end.mp3");
+    endAudio.play();
   };
 
   window.addEventListener("devicemotion", (event) => {

@@ -5,7 +5,7 @@
   <title>新春ドラコン大会、始まるよ！</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Kaisei Decol -->
+  <!-- Google Font: Kaisei Decol -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Kaisei+Decol&display=swap" rel="stylesheet">
@@ -13,18 +13,18 @@
   <style>
     body {
       margin: 0;
+      padding: 20px;
       font-family: 'Kaisei Decol', serif;
       text-align: center;
       background: url("background.png") no-repeat center center fixed;
       background-size: cover;
       color: #fff;
-      padding: 20px;
     }
 
     h1 {
       font-size: 28px;
-      margin-bottom: 10px;
       text-shadow: 2px 2px 4px #000;
+      margin-bottom: 10px;
     }
 
     img {
@@ -36,32 +36,34 @@
       font-family: 'Kaisei Decol', serif;
       font-size: 18px;
       padding: 12px 24px;
-      margin: 10px;
+      margin: 8px;
       border-radius: 10px;
       border: none;
+      cursor: pointer;
     }
 
     #select {
       background: #1e90ff;
-      color: white;
+      color: #fff;
     }
 
     #start {
       background: #ffd700;
-      color: black;
+      color: #000;
     }
 
     #reset {
       background: #ff6347;
-      color: white;
+      color: #fff;
     }
 
     button:disabled {
       background: #888;
+      cursor: not-allowed;
     }
 
     #distance {
-      font-size: 32px;
+      font-size: 34px;
       margin-top: 20px;
       text-shadow: 2px 2px 4px #000;
     }
@@ -69,100 +71,109 @@
 </head>
 <body>
 
-<h1>🎍 新春ドラコン大会、始まるよ！</h1>
+  <h1>🎍 新春ドラコン大会、始まるよ！</h1>
 
-<img src="Player_A.png" alt="プレイヤーA">
+  <img src="Player_A.png" alt="プレイヤーA">
 
-<br>
+  <br>
 
-<button id="select">プレイヤーを選ぶ</button>
-<br>
-<button id="start" disabled>クラブを振って！</button>
-<button id="reset">やっぱり止める！</button>
+  <button id="select">プレイヤーを選ぶ</button><br>
+  <button id="start" disabled>クラブを振って！</button>
+  <button id="reset">やっぱり止める！</button>
 
-<div id="distance">0 ヤード</div>
+  <div id="distance">0 ヤード</div>
 
-<script>
-let measuring = false;
-let peakAccel = 0;
-let swingStart = null;
-let accelSamples = [];
+  <script>
+    let measuring = false;
+    let peakAccel = 0;
+    let swingStart = null;
+    let accelSamples = [];
 
-function magnitude(x, y, z) {
-  return Math.sqrt(x*x + y*y + z*z);
-}
+    function magnitude(x, y, z) {
+      return Math.sqrt(x*x + y*y + z*z);
+    }
 
-// 計測開始
-document.getElementById("start").onclick = async () => {
-  if (typeof DeviceMotionEvent.requestPermission === 'function') {
-    const permission = await DeviceMotionEvent.requestPermission();
-    if (permission !== 'granted') return;
-  }
+    // プレイヤー選択
+    document.getElementById("select").onclick = () => {
+      document.getElementById("start").disabled = false;
+      document.getElementById("distance").textContent = "準備OK！";
+    };
 
-  measuring = true;
-  peakAccel = 0;
-  swingStart = null;
-  accelSamples = [];
-  document.getElementById("distance").textContent = "計測中…";
-};
+    // 計測開始
+    document.getElementById("start").onclick = async () => {
+      if (typeof DeviceMotionEvent.requestPermission === "function") {
+        const permission = await DeviceMotionEvent.requestPermission();
+        if (permission !== "granted") return;
+      }
 
-// リセット
-document.getElementById("reset").onclick = () => {
-  measuring = false;
-  document.getElementById("distance").textContent = "0 ヤード";
-};
+      measuring = true;
+      peakAccel = 0;
+      swingStart = null;
+      accelSamples = [];
+      document.getElementById("distance").textContent = "計測中…";
+    };
 
-window.addEventListener("devicemotion", (event) => {
-  if (!measuring) return;
+    // リセット
+    document.getElementById("reset").onclick = () => {
+      measuring = false;
+      document.getElementById("distance").textContent = "0 ヤード";
+    };
 
-  const a = event.acceleration;
-  if (!a) return;
+    // モーション検出
+    window.addEventListener("devicemotion", (event) => {
+      if (!measuring) return;
 
-  const mag = magnitude(a.x || 0, a.y || 0, a.z || 0);
+      // 重力を除外
+      const a = event.acceleration;
+      if (!a) return;
 
-  // スイング検出
-  if (mag > 22) {
-    if (!swingStart) swingStart = Date.now();
-    peakAccel = Math.max(peakAccel, mag);
-    accelSamples.push(mag);
-  }
+      const mag = magnitude(a.x || 0, a.y || 0, a.z || 0);
 
-  if (swingStart && Date.now() - swingStart > 700) {
-    finishSwing();
-  }
-});
+      // スイング検出開始
+      if (mag > 22) {
+        if (!swingStart) swingStart = Date.now();
+        peakAccel = Math.max(peakAccel, mag);
+        accelSamples.push(mag);
+      }
 
-function finishSwing() {
-  measuring = false;
+      // 計測終了（最大700ms）
+      if (swingStart && Date.now() - swingStart > 700) {
+        finishSwing();
+      }
+    });
 
-  const duration = accelSamples.length * 16; // 約ms
+    function finishSwing() {
+      measuring = false;
 
-  // 成立条件（かなり厳しめ）
-  if (peakAccel < 32 || duration < 180) {
-    document.getElementById("distance").textContent = "0 ヤード";
-    return;
-  }
+      const duration = accelSamples.length * 16; // ms相当
 
-  // 安定度計算（ブレ）
-  const avg =
-    accelSamples.reduce((a, b) => a + b, 0) / accelSamples.length;
-  const variance =
-    accelSamples.reduce((a, b) => a + Math.pow(b - avg, 2), 0) /
-    accelSamples.length;
-  const stability = Math.max(0.4, 1 - variance / 120);
+      // スイング成立条件（かなり厳しい）
+      if (peakAccel < 32 || duration < 180) {
+        document.getElementById("distance").textContent = "0 ヤード";
+        return;
+      }
 
-  // 飛距離計算（300が出にくい）
-  const basePower = Math.pow(peakAccel - 28, 1.25);
-  const timeFactor = Math.min(1.1, duration / 400);
+      // 安定度（ブレ）評価
+      const avg =
+        accelSamples.reduce((a, b) => a + b, 0) / accelSamples.length;
 
-  let distance = basePower * timeFactor * stability * 1.2;
+      const variance =
+        accelSamples.reduce((a, b) => a + Math.pow(b - avg, 2), 0) /
+        accelSamples.length;
 
-  distance = Math.min(300, Math.floor(distance));
-  document.getElementById("distance").textContent =
-    distance + " ヤード";
-}
-</script>
+      const stability = Math.max(0.4, 1 - variance / 120);
 
+      // 飛距離計算（300が出にくい）
+      const basePower = Math.pow(peakAccel - 28, 1.25);
+      const timeFactor = Math.min(1.1, duration / 400);
+
+      let distance = basePower * timeFactor * stability * 1.2;
+      distance = Math.min(300, Math.floor(distance));
+
+      document.getElementById("distance").textContent =
+        distance + " ヤード";
+    }
+  </script>
 
 </body>
 </html>

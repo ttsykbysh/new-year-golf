@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>new-year-golf</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background: #0b6623;
+      color: white;
+      padding: 20px;
+    }
+    button {
+      font-size: 18px;
+      padding: 12px 24px;
+      margin: 10px;
+      border-radius: 8px;
+      border: none;
+    }
+    #start { background: #ffd700; }
+    #reset { background: #ff6347; }
+    #distance {
+      font-size: 32px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🏌️ new-year-golf</h1>
+
+<button id="start">クラブを振って！</button>
+<button id="reset">やっぱり止める！</button>
+
+<div id="distance">0 ヤード</div>
+
+<script>
+let measuring = false;
+let maxAccel = 0;
+let startTime = 0;
+
+function magnitude(x, y, z) {
+  return Math.sqrt(x*x + y*y + z*z);
+}
+
+document.getElementById("start").onclick = async () => {
+  if (typeof DeviceMotionEvent.requestPermission === 'function') {
+    const permission = await DeviceMotionEvent.requestPermission();
+    if (permission !== 'granted') return;
+  }
+
+  measuring = true;
+  maxAccel = 0;
+  startTime = Date.now();
+  document.getElementById("distance").textContent = "計測中…";
+};
+
+document.getElementById("reset").onclick = () => {
+  measuring = false;
+  maxAccel = 0;
+  document.getElementById("distance").textContent = "0 ヤード";
+};
+
+window.addEventListener("devicemotion", (event) => {
+  if (!measuring) return;
+
+  const a = event.accelerationIncludingGravity;
+  if (!a) return;
+
+  const mag = magnitude(a.x || 0, a.y || 0, a.z || 0);
+  maxAccel = Math.max(maxAccel, mag);
+
+  const elapsed = Date.now() - startTime;
+
+  // 計測は1秒以内
+  if (elapsed > 1000) {
+    measuring = false;
+
+    // スイング成立条件
+    if (maxAccel < 15 || elapsed < 100) {
+      document.getElementById("distance").textContent = "0 ヤード";
+      return;
+    }
+
+    // 飛距離計算（対数補正）
+    let distance = Math.log(maxAccel) * elapsed * 0.6;
+    distance = Math.min(300, Math.floor(distance));
+
+    document.getElementById("distance").textContent =
+      distance + " ヤード";
+  }
+});
+</script>
+
+</body>
+</html>

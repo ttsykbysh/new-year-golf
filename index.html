@@ -93,18 +93,11 @@
 <h1>🎍 新春ドラコン大会、始まるよ！</h1>
 
 <!-- プレイヤー選択 -->
-<div id="playerSelect" class="players">
-  <div class="player-btn" data-player="ama">
-    <img src="Player_A.png" alt="アマチュア">
-  </div>
-  <div class="player-btn" data-player="pro">
-    <img src="Player_B.png" alt="プロゴルファー">
-  </div>
-</div>
+<div id="playerSelect" class="players"></div>
 
-<!-- 計測操作 -->
+<!-- 操作ボタン -->
 <button id="start" disabled>クラブを振って！</button>
-<button id="reset">やっぱり止める！</button>
+<button id="reset">やり直したい！</button>
 
 <div id="distance">プレイヤーを選んでください</div>
 
@@ -115,31 +108,49 @@
   let accelSamples = [];
   let playerType = null;
 
+  const playerSelect = document.getElementById("playerSelect");
+  const startBtn = document.getElementById("start");
+  const distanceEl = document.getElementById("distance");
+
   function magnitude(x, y, z) {
     return Math.sqrt(x*x + y*y + z*z);
   }
 
-  // ===== プレイヤー画像クリック =====
-  document.querySelectorAll(".player-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      playerType = btn.dataset.player;
+  // ===== プレイヤー選択UIを初期化 =====
+  function initPlayerSelect() {
+    playerSelect.innerHTML = `
+      <div class="player-btn" data-player="ama">
+        <img src="Player_A.png" alt="アマチュア">
+      </div>
+      <div class="player-btn" data-player="pro">
+        <img src="Player_B.png" alt="プロゴルファー">
+      </div>
+    `;
 
-      // 選択された画像だけ残す
-      const container = document.getElementById("playerSelect");
-      container.innerHTML = "";
-      btn.classList.add("selected");
-      container.appendChild(btn);
-
-      document.getElementById("start").disabled = false;
-      document.getElementById("distance").textContent =
-        playerType === "pro"
-          ? "プロゴルファー準備完了！"
-          : "アマチュア準備完了！";
+    document.querySelectorAll(".player-btn").forEach(btn => {
+      btn.addEventListener("click", () => selectPlayer(btn));
     });
-  });
+  }
+
+  function selectPlayer(btn) {
+    playerType = btn.dataset.player;
+
+    playerSelect.innerHTML = "";
+    btn.classList.add("selected");
+    playerSelect.appendChild(btn);
+
+    startBtn.disabled = false;
+    distanceEl.textContent =
+      playerType === "pro"
+        ? "プロゴルファー準備完了！"
+        : "アマチュア準備完了！";
+  }
+
+  // 初期表示
+  initPlayerSelect();
 
   // ===== 計測開始 =====
-  document.getElementById("start").onclick = async () => {
+  startBtn.onclick = async () => {
     if (typeof DeviceMotionEvent.requestPermission === "function") {
       const permission = await DeviceMotionEvent.requestPermission();
       if (permission !== "granted") return;
@@ -149,20 +160,23 @@
     peakAccel = 0;
     swingStart = null;
     accelSamples = [];
-    document.getElementById("distance").textContent = "計測中…";
+    distanceEl.textContent = "計測中…";
   };
 
-  // ===== リセット =====
+  // ===== やり直したい！ =====
   document.getElementById("reset").onclick = () => {
     measuring = false;
-    document.getElementById("distance").textContent = "0 ヤード";
+    playerType = null;
+    startBtn.disabled = true;
+    distanceEl.textContent = "プレイヤーを選んでください";
+    initPlayerSelect();
   };
 
   // ===== モーション検出 =====
   window.addEventListener("devicemotion", (event) => {
     if (!measuring) return;
 
-    const a = event.acceleration; // 重力除外
+    const a = event.acceleration;
     if (!a) return;
 
     const mag = magnitude(a.x || 0, a.y || 0, a.z || 0);
@@ -188,7 +202,7 @@
       : { accelMin: 32, baseOffset: 28, power: 1.25, multiplier: 1.2 };
 
     if (peakAccel < params.accelMin || duration < 180) {
-      document.getElementById("distance").textContent = "0 ヤード";
+      distanceEl.textContent = "0 ヤード";
       return;
     }
 
@@ -207,9 +221,7 @@
       basePower * timeFactor * stability * params.multiplier;
 
     distance = Math.min(300, Math.floor(distance));
-
-    document.getElementById("distance").textContent =
-      distance + " ヤード";
+    distanceEl.textContent = distance + " ヤード";
   }
 </script>
 

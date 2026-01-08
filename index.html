@@ -38,8 +38,9 @@
 
 <script>
 let measuring = false;
-let maxAccel = 0;
-let startTime = 0;
+let peakAccel = 0;
+let swingStart = null;
+let swingDuration = 0;
 
 function magnitude(x, y, z) {
   return Math.sqrt(x*x + y*y + z*z);
@@ -52,47 +53,60 @@ document.getElementById("start").onclick = async () => {
   }
 
   measuring = true;
-  maxAccel = 0;
-  startTime = Date.now();
+  peakAccel = 0;
+  swingStart = null;
+  swingDuration = 0;
   document.getElementById("distance").textContent = "計測中…";
 };
 
 document.getElementById("reset").onclick = () => {
   measuring = false;
-  maxAccel = 0;
   document.getElementById("distance").textContent = "0 ヤード";
 };
 
 window.addEventListener("devicemotion", (event) => {
   if (!measuring) return;
 
-  const a = event.accelerationIncludingGravity;
+  // ★重力を除外
+  const a = event.acceleration;
   if (!a) return;
 
   const mag = magnitude(a.x || 0, a.y || 0, a.z || 0);
-  maxAccel = Math.max(maxAccel, mag);
 
-  const elapsed = Date.now() - startTime;
+  // スイング開始判定
+  if (mag > 25) {
+    if (!swingStart) swingStart = Date.now();
+    peakAccel = Math.max(peakAccel, mag);
+  }
 
-  // 計測は1秒以内
-  if (elapsed > 1000) {
-    measuring = false;
+  // スイング中
+  if (swingStart) {
+    swingDuration = Date.now() - swingStart;
 
-    // スイング成立条件
-    if (maxAccel < 15 || elapsed < 100) {
-      document.getElementById("distance").textContent = "0 ヤード";
-      return;
-    }
-
-    // 飛距離計算（対数補正）
-    let distance = Math.log(maxAccel) * elapsed * 0.6;
-    distance = Math.min(300, Math.floor(distance));
-
-    document.getElementById("distance").textContent =
-      distance + " ヤード";
+    // 計測上限 600ms
+    if (swingDuration > 600) finishSwing();
   }
 });
+
+function finishSwing() {
+  measuring = false;
+
+  // 成立条件チェック
+  if (peakAccel < 30 || swingDuration < 150) {
+    document.getElementById("distance").textContent = "0 ヤード";
+    return;
+  }
+
+  // ★飛距離計算（簡単に300行かない）
+  let power = Math.sqrt(peakAccel - 25);
+  let distance = power * (swingDuration / 100) * 18;
+
+  distance = Math.min(300, Math.floor(distance));
+  document.getElementById("distance").textContent =
+    distance + " ヤード";
+}
 </script>
+
 
 </body>
 </html>

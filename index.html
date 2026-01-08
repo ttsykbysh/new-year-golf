@@ -28,14 +28,12 @@
       margin-bottom: 20px;
     }
 
-    /* ★ 画面端に余白を作る */
+    /* ★ 余白調整を取り消し（中央寄せに戻す） */
     .players {
       display: flex;
-      justify-content: space-between;
-      max-width: 420px;
-      margin: 10px auto 0;
-      padding: 0 20px;
-      gap: 20px;
+      justify-content: center;
+      gap: 30px;
+      margin-top: 10px;
     }
 
     .player-btn {
@@ -131,7 +129,6 @@
     return Math.sqrt(x*x + y*y + z*z);
   }
 
-  // ===== プレイヤー選択UI初期化 =====
   function initPlayerSelect() {
     playerSelect.innerHTML = `
       <div class="player-btn" data-player="ama">
@@ -160,10 +157,8 @@
     distanceEl.textContent = "スイングする！を押してスイング！！";
   }
 
-  // 初期表示
   initPlayerSelect();
 
-  // ===== 計測開始 =====
   startBtn.onclick = async () => {
     if (typeof DeviceMotionEvent.requestPermission === "function") {
       const permission = await DeviceMotionEvent.requestPermission();
@@ -177,7 +172,6 @@
     distanceEl.textContent = "計測中…";
   };
 
-  // ===== やり直したい！ =====
   document.getElementById("reset").onclick = () => {
     measuring = false;
     playerType = null;
@@ -186,7 +180,6 @@
     initPlayerSelect();
   };
 
-  // ===== モーション検出 =====
   window.addEventListener("devicemotion", (event) => {
     if (!measuring) return;
 
@@ -220,9 +213,7 @@
       return;
     }
 
-    const avg =
-      accelSamples.reduce((a, b) => a + b, 0) / accelSamples.length;
-
+    const avg = accelSamples.reduce((a, b) => a + b, 0) / accelSamples.length;
     const variance =
       accelSamples.reduce((a, b) => a + Math.pow(b - avg, 2), 0) /
       accelSamples.length;
@@ -241,3 +232,4 @@
 
 </body>
 </html>
+

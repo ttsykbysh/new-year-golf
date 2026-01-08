@@ -26,25 +26,55 @@
       text-shadow: 2px 2px 4px #000;
     }
 
-    img {
-      width: 180px;
-      margin: 15px 0;
+    .players {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-top: 20px;
+    }
+
+    .player-btn {
+      border: 4px solid transparent;
+      border-radius: 12px;
+      padding: 6px;
+      cursor: pointer;
+      transition: transform 0.2s, border 0.2s;
+      background: rgba(0,0,0,0.3);
+    }
+
+    .player-btn:hover {
+      transform: scale(1.05);
+      border-color: gold;
+    }
+
+    .player-btn img {
+      width: 160px;
+      display: block;
+    }
+
+    .selected {
+      border-color: gold;
     }
 
     button {
       font-family: 'Kaisei Decol', serif;
       font-size: 18px;
-      padding: 12px 22px;
-      margin: 6px;
+      padding: 12px 24px;
+      margin: 10px;
       border-radius: 10px;
       border: none;
       cursor: pointer;
     }
 
-    #pro { background: #4169e1; color: #fff; }
-    #ama { background: #2e8b57; color: #fff; }
-    #start { background: #ffd700; color: #000; }
-    #reset { background: #ff6347; color: #fff; }
+    #start {
+      background: #ffd700;
+      color: #000;
+    }
+
+    #reset {
+      background: #ff6347;
+      color: #fff;
+    }
 
     button:disabled {
       background: #888;
@@ -62,15 +92,17 @@
 
 <h1>🎍 新春ドラコン大会、始まるよ！</h1>
 
-<img id="playerImage" src="Player_A.png" alt="プレイヤー">
-
-<div>
-  <button id="pro">プロゴルファーを選ぶ</button>
-  <button id="ama">アマチュアを選ぶ</button>
+<!-- プレイヤー選択 -->
+<div id="playerSelect" class="players">
+  <div class="player-btn" data-player="ama">
+    <img src="Player_A.png" alt="アマチュア">
+  </div>
+  <div class="player-btn" data-player="pro">
+    <img src="Player_B.png" alt="プロゴルファー">
+  </div>
 </div>
 
-<br>
-
+<!-- 計測操作 -->
 <button id="start" disabled>クラブを振って！</button>
 <button id="reset">やっぱり止める！</button>
 
@@ -87,20 +119,24 @@
     return Math.sqrt(x*x + y*y + z*z);
   }
 
-  // ===== プレイヤー選択 =====
-  document.getElementById("pro").onclick = () => {
-    playerType = "pro";
-    document.getElementById("playerImage").src = "Player_B.png";
-    document.getElementById("start").disabled = false;
-    document.getElementById("distance").textContent = "プロゴルファー準備完了！";
-  };
+  // ===== プレイヤー画像クリック =====
+  document.querySelectorAll(".player-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      playerType = btn.dataset.player;
 
-  document.getElementById("ama").onclick = () => {
-    playerType = "ama";
-    document.getElementById("playerImage").src = "Player_A.png";
-    document.getElementById("start").disabled = false;
-    document.getElementById("distance").textContent = "アマチュア準備完了！";
-  };
+      // 選択された画像だけ残す
+      const container = document.getElementById("playerSelect");
+      container.innerHTML = "";
+      btn.classList.add("selected");
+      container.appendChild(btn);
+
+      document.getElementById("start").disabled = false;
+      document.getElementById("distance").textContent =
+        playerType === "pro"
+          ? "プロゴルファー準備完了！"
+          : "アマチュア準備完了！";
+    });
+  });
 
   // ===== 計測開始 =====
   document.getElementById("start").onclick = async () => {
@@ -147,7 +183,6 @@
 
     const duration = accelSamples.length * 16;
 
-    // ===== プレイヤー別パラメータ =====
     const params = playerType === "pro"
       ? { accelMin: 28, baseOffset: 24, power: 1.35, multiplier: 1.45 }
       : { accelMin: 32, baseOffset: 28, power: 1.25, multiplier: 1.2 };

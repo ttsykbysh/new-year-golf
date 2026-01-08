@@ -112,9 +112,11 @@
   let swingStart = null;
   let accelSamples = [];
   let playerType = null;
+
   let swingAudio = null;
   let selectAudio = null;
   let endAudio = null;
+  let tryAgainAudio = null;
 
   const playerSelect = document.getElementById("playerSelect");
   const startBtn = document.getElementById("start");
@@ -144,7 +146,6 @@
   function selectPlayer(btn) {
     playerType = btn.dataset.player;
 
-    // ★ プレイヤー選択音
     const selectFile = playerType === "pro"
       ? "p_select.mp3"
       : "a_select.mp3";
@@ -188,7 +189,12 @@
     distanceEl.textContent = "計測中…";
   };
 
-  document.getElementById("reset").onclick = fullReset;
+  // ★ やり直したい！
+  document.getElementById("reset").onclick = () => {
+    tryAgainAudio = new Audio("tryagain.mp3");
+    tryAgainAudio.play();
+    fullReset();
+  };
 
   document.getElementById("end").onclick = () => {
     fullReset();

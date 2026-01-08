@@ -181,4 +181,63 @@
   document.getElementById("reset").onclick = () => {
     measuring = false;
     playerType = null;
-    startBtn.disabled = tru
+    startBtn.disabled = true;
+    distanceEl.textContent = "プレイヤーを選んで！";
+    initPlayerSelect();
+  };
+
+  // ===== モーション検出 =====
+  window.addEventListener("devicemotion", (event) => {
+    if (!measuring) return;
+
+    const a = event.acceleration;
+    if (!a) return;
+
+    const mag = magnitude(a.x || 0, a.y || 0, a.z || 0);
+
+    if (mag > 22) {
+      if (!swingStart) swingStart = Date.now();
+      peakAccel = Math.max(peakAccel, mag);
+      accelSamples.push(mag);
+    }
+
+    if (swingStart && Date.now() - swingStart > 700) {
+      finishSwing();
+    }
+  });
+
+  function finishSwing() {
+    measuring = false;
+
+    const duration = accelSamples.length * 16;
+
+    const params = playerType === "pro"
+      ? { accelMin: 28, baseOffset: 24, power: 1.35, multiplier: 1.45 }
+      : { accelMin: 32, baseOffset: 28, power: 1.25, multiplier: 1.2 };
+
+    if (peakAccel < params.accelMin || duration < 180) {
+      distanceEl.textContent = "0 ヤード";
+      return;
+    }
+
+    const avg =
+      accelSamples.reduce((a, b) => a + b, 0) / accelSamples.length;
+
+    const variance =
+      accelSamples.reduce((a, b) => a + Math.pow(b - avg, 2), 0) /
+      accelSamples.length;
+
+    const stability = Math.max(0.45, 1 - variance / 120);
+    const basePower = Math.pow(peakAccel - params.baseOffset, params.power);
+    const timeFactor = Math.min(1.1, duration / 400);
+
+    let distance =
+      basePower * timeFactor * stability * params.multiplier;
+
+    distance = Math.min(300, Math.floor(distance));
+    distanceEl.textContent = distance + " ヤード";
+  }
+</script>
+
+</body>
+</html>
